@@ -8,6 +8,7 @@ from schemas.salaries_schema import (
     SalaryResponse
 )
 from errors_handling.HTTP_Exceptions import not_found
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/salaries",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=SalaryResponse)
 def create_salary(
     data: SalaryCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("salaries.create"))
 ):
     salary = Salary(
         employee_id=data.employee_id,
@@ -34,7 +36,8 @@ def create_salary(
 @router.get("/", response_model=list[SalaryResponse])
 def get_salaries(
     employee_id: int | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("salaries.read"))
 ):
     query = db.query(Salary)
     if employee_id:
@@ -46,7 +49,8 @@ def get_salaries(
 @router.get("/{salary_id}", response_model=SalaryResponse)
 def get_salary(
     salary_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("salaries.read"))
 ):
     salary = db.query(Salary).filter(
         Salary.id == salary_id
@@ -59,7 +63,8 @@ def get_salary(
 def update_salary(
     salary_id: int,
     data: SalaryUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("salaries.update"))
 ):
     salary = db.query(Salary).filter(
         Salary.id == salary_id
@@ -76,7 +81,8 @@ def update_salary(
 @router.delete("/{salary_id}")
 def delete_salary(
     salary_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("salaries.delete"))
 ):
     salary = db.query(Salary).filter(
         Salary.id == salary_id

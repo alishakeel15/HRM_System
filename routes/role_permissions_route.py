@@ -9,6 +9,7 @@ from schemas.role_permissions_schema import (
     RolePermissionResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/role-permissions",
@@ -18,7 +19,8 @@ router = APIRouter(
 @router.post("/", response_model=RolePermissionResponse)
 def create_role_permission(
     data: RolePermissionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("role_permissions.create"))
 ):
     existing = db.query(RolePermission).filter(
         RolePermission.role_id == data.role_id,
@@ -39,7 +41,8 @@ def create_role_permission(
 def get_role_permissions(
     role_id: int | None = None,
     permission_id: int | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("role_permissions.read"))
 ):
     query = db.query(RolePermission)
     if role_id:
@@ -59,7 +62,8 @@ def get_role_permissions(
 def get_role_permission(
     role_id: int,
     permission_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("role_permissions.read"))
 ):
     role_permission = db.query(RolePermission).filter(
         RolePermission.role_id == role_id,
@@ -77,7 +81,8 @@ def update_role_permission(
     role_id: int,
     permission_id: int,
     data: RolePermissionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("role_permissions.update"))
 ):
     role_permission = db.query(RolePermission).filter(
         RolePermission.role_id == role_id,
@@ -96,7 +101,8 @@ def update_role_permission(
 def delete_role_permission(
     role_id: int,
     permission_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("role_permissions.delete"))
 ):
     role_permission = db.query(RolePermission).filter(
         RolePermission.role_id == role_id,

@@ -8,7 +8,7 @@ from schemas.designations_schema import (
     DesignationResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
-
+from dependencies.auth import require_permission
 router = APIRouter(
     prefix="/designations",
     tags=["Designations"]
@@ -17,7 +17,8 @@ router = APIRouter(
 @router.post("/", response_model=DesignationResponse)
 def create_designation(
     data: DesignationCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("designations.create"))
 ):
     existing_designation = db.query(Designation).filter(
         Designation.name == data.name
@@ -37,7 +38,8 @@ def create_designation(
 def get_designations(
     name: str | None = None,
     department_id: int | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("designations.read"))
 ):
     query = db.query(Designation)
     if name:
@@ -53,7 +55,8 @@ def get_designations(
 @router.get("/{designation_id}", response_model=DesignationResponse)
 def get_designation(
     designation_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("designations.read"))
 ):
     designation = db.query(Designation).filter(
         Designation.id == designation_id
@@ -66,7 +69,8 @@ def get_designation(
 def update_designation(
     designation_id: int,
     data: DesignationUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("designations.update"))
 ):
     designation = db.query(Designation).filter(
         Designation.id == designation_id
@@ -90,7 +94,8 @@ def update_designation(
 @router.delete("/{designation_id}")
 def delete_designation(
     designation_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("designations.delete"))
 ):
     designation = db.query(Designation).filter(
         Designation.id == designation_id

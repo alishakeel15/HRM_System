@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+from dependencies.auth import require_permission
 from dependencies.db import get_db
 from models.leaves_model import Leave
 from schemas.leaves_schema import (
@@ -7,7 +10,7 @@ from schemas.leaves_schema import (
     LeaveUpdate,
     LeaveResponse
 )
-from errors_handling.HTTP_Exceptions import not_found
+from errors_handling.HTTP_Exceptions import already_exists, not_found
 
 router = APIRouter(
     prefix="/leaves",
@@ -17,7 +20,8 @@ router = APIRouter(
 @router.post("/", response_model=LeaveResponse)
 def create_leave(
     data: LeaveCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("leaves.create"))
 ):
     leave = Leave(
         employee_id=data.employee_id,
@@ -25,7 +29,6 @@ def create_leave(
         start_date=data.start_date,
         end_date=data.end_date,
         reason=data.reason,
-        status=data.status
     )
     db.add(leave)
     db.commit()
@@ -36,7 +39,8 @@ def create_leave(
 def get_leaves(
     employee_id: int | None = None,
     status: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("leaves.read"))
 ):
     query = db.query(Leave)
     if employee_id:
@@ -52,7 +56,8 @@ def get_leaves(
 @router.get("/{leave_id}", response_model=LeaveResponse)
 def get_leave(
     leave_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("leaves.read"))
 ):
     leave = db.query(Leave).filter(
         Leave.id == leave_id
@@ -65,7 +70,8 @@ def get_leave(
 def update_leave(
     leave_id: int,
     data: LeaveUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("leaves.update"))
 ):
     leave = db.query(Leave).filter(
         Leave.id == leave_id
@@ -82,7 +88,8 @@ def update_leave(
 @router.delete("/{leave_id}")
 def delete_leave(
     leave_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("leaves.delete"))
 ):
     leave = db.query(Leave).filter(
         Leave.id == leave_id
@@ -92,3 +99,46 @@ def delete_leave(
     db.delete(leave)
     db.commit()
     return {"message": "Leave deleted successfully"}
+
+@router.patch("/{leave_id}/approve", response_model=LeaveResponse)
+def approve_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(
+        require_permission("leaves.approve")
+    )
+):
+    leave = db.query(Leave).filter(
+        Leave.id == leave_id
+    ).first()
+    if not leave:
+        raise not_found("Leave not found")
+    if leave.status != "pending":
+        raise already_exists("Leave has already been processed")
+    leave.status = "approved"
+    leave.approved_by = current_user.id
+    leave.approved_at = datetime.now()
+    db.commit()
+    db.refresh(leave)
+    return leave
+@router.patch("/{leave_id}/reject", response_model=LeaveResponse)
+def reject_leave(
+    leave_id: int,
+    db: Session = Depends(get_db),
+    current_user = Depends(
+        require_permission("leaves.approve")
+    )
+):
+    leave = db.query(Leave).filter(
+        Leave.id == leave_id
+    ).first()
+    if not leave:
+        raise not_found("Leave not found")
+    if leave.status != "pending":
+        raise already_exists("Leave has already been processed")
+    leave.status = "rejected"
+    leave.approved_by = current_user.id
+    leave.approved_at = datetime.now()
+    db.commit()
+    db.refresh(leave)
+    return leave

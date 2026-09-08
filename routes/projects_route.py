@@ -8,6 +8,7 @@ from schemas.projects_schema import (
     ProjectResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/projects",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=ProjectResponse)
 def create_project(
     data: ProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("projects.create"))
 ):
     existing_project = db.query(Project).filter(
         Project.name == data.name
@@ -40,7 +42,8 @@ def create_project(
 def get_projects(
     name: str | None = None,
     status: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("projects.read"))
 ):
     query = db.query(Project)
     if name:
@@ -56,7 +59,8 @@ def get_projects(
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("projects.read"))
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -69,7 +73,8 @@ def get_project(
 def update_project(
     project_id: int,
     data: ProjectUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("projects.update"))
 ):
     project = db.query(Project).filter(
         Project.id == project_id
@@ -93,7 +98,8 @@ def update_project(
 @router.delete("/{project_id}")
 def delete_project(
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("projects.delete"))
 ):
     project = db.query(Project).filter(
         Project.id == project_id

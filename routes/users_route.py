@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from dependencies.db import get_db
 from models.users_model import User
-from schemas.users_schema import UserCreate, UserUpdate, UserResponse
+from schemas.users_schema import UserCreate, UserUpdate, UserResponse, UserRoleUpdate
 from errors_handling.HTTP_Exceptions import not_found, already_exists
 from utils.password import hash_password
-from dependencies.auth import require_permission
+from dependencies.auth import require_permission, require_role
+from models.roles_model import Role
+
 router = APIRouter(
     prefix="/users",
     tags=["Users"]
@@ -127,4 +129,31 @@ def delete_user(
     db.commit()
     return {
         "message": "User deleted successfully"
+    }
+
+@router.patch("/{user_id}/role")
+def assign_role(
+    user_id: int,
+    data: UserRoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("Admin"))
+):
+    user = db.query(User).filter(
+        User.id == user_id
+    ).first()
+    if not user:
+        raise not_found("User not found")
+    role = db.query(Role).filter(
+        Role.id == data.role_id
+    ).first()
+    if not role:
+        raise not_found("Role not found")
+    user.role_id = role.id
+    db.commit()
+    db.refresh(user)
+    return {
+        "message": "Role assigned successfully",
+        "user_id": user.id,
+        "role_id": role.id,
+        "role": role.name
     }

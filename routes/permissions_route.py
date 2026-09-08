@@ -8,6 +8,7 @@ from schemas.permissions_schema import (
     PermissionResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/permissions",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=PermissionResponse)
 def create_permission(
     data: PermissionCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("permissions.create"))
 ):
     existing_permission = db.query(Permission).filter(
         Permission.name == data.name
@@ -36,7 +38,8 @@ def create_permission(
 @router.get("/", response_model=list[PermissionResponse])
 def get_permissions(
     name: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("permissions.read"))
 ):
     query = db.query(Permission)
     if name:
@@ -48,7 +51,8 @@ def get_permissions(
 @router.get("/{permission_id}", response_model=PermissionResponse)
 def get_permission(
     permission_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("permissions.read"))
 ):
     permission = db.query(Permission).filter(
         Permission.id == permission_id
@@ -61,7 +65,8 @@ def get_permission(
 def update_permission(
     permission_id: int,
     data: PermissionUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("permissions.update"))
 ):
     permission = db.query(Permission).filter(
         Permission.id == permission_id
@@ -85,7 +90,8 @@ def update_permission(
 @router.delete("/{permission_id}")
 def delete_permission(
     permission_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("permissions.delete"))
 ):
     permission = db.query(Permission).filter(
         Permission.id == permission_id

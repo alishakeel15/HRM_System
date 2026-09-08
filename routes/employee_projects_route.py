@@ -8,6 +8,7 @@ from schemas.employee_projects_schema import (
     EmployeeProjectResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/employee-projects",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=EmployeeProjectResponse)
 def create_employee_project(
     data: EmployeeProjectCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("employee_projects.create"))
 ):
     existing = db.query(EmployeeProject).filter(
         EmployeeProject.employee_id == data.employee_id,
@@ -38,7 +40,8 @@ def create_employee_project(
 def get_employee_projects(
     employee_id: int | None = None,
     project_id: int | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("employee_projects.read"))
 ):
     query = db.query(EmployeeProject)
     if employee_id:
@@ -58,7 +61,8 @@ def get_employee_projects(
 def get_employee_project(
     employee_id: int,
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("employee_projects.read"))
 ):
     employee_project = db.query(EmployeeProject).filter(
         EmployeeProject.employee_id == employee_id,
@@ -76,7 +80,8 @@ def update_employee_project(
     employee_id: int,
     project_id: int,
     data: EmployeeProjectUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("employee_projects.update"))
 ):
     employee_project = db.query(EmployeeProject).filter(
         EmployeeProject.employee_id == employee_id,
@@ -95,7 +100,8 @@ def update_employee_project(
 def delete_employee_project(
     employee_id: int,
     project_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("employee_projects.delete"))
 ):
     employee_project = db.query(EmployeeProject).filter(
         EmployeeProject.employee_id == employee_id,

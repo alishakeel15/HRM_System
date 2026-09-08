@@ -1,7 +1,8 @@
 from datetime import date
-from sqlalchemy import Date, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
+from datetime import datetime
 
 class Leave(Base):
     __tablename__ = "leaves"
@@ -30,6 +31,17 @@ class Leave(Base):
         nullable=True
     )
     status: Mapped[str] = mapped_column(
-        String(30),
-        default="pending"
+    String(20),
+    default="pending",
+    nullable=False
+    )
+
+    approved_by: Mapped[int | None] = mapped_column(
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True
+    )
+
+    approved_at: Mapped[datetime | None] = mapped_column(
+    DateTime,
+    nullable=True
     )

@@ -8,6 +8,7 @@ from schemas.attendance_schema import (
     AttendanceResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/attendance",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=AttendanceResponse)
 def create_attendance(
     data: AttendanceCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("attendance.create"))
 ):
     existing_attendance = db.query(Attendance).filter(
         Attendance.employee_id == data.employee_id,
@@ -43,7 +45,8 @@ def create_attendance(
 def get_attendance(
     employee_id: int | None = None,
     status: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("attendance.read"))
 ):
     query = db.query(Attendance)
     if employee_id:
@@ -59,7 +62,8 @@ def get_attendance(
 @router.get("/{attendance_id}", response_model=AttendanceResponse)
 def get_attendance_record(
     attendance_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("attendance.read"))
 ):
     attendance = db.query(Attendance).filter(
         Attendance.id == attendance_id
@@ -75,7 +79,8 @@ def get_attendance_record(
 def update_attendance(
     attendance_id: int,
     data: AttendanceUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("attendance.update"))
 ):
     attendance = db.query(Attendance).filter(
         Attendance.id == attendance_id
@@ -93,7 +98,8 @@ def update_attendance(
 @router.delete("/{attendance_id}")
 def delete_attendance(
     attendance_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("attendance.delete"))
 ):
     attendance = db.query(Attendance).filter(
         Attendance.id == attendance_id

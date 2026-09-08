@@ -8,12 +8,13 @@ from errors_handling.HTTP_Exceptions import already_exists, unauthorized
 from schemas.auth_schema import TokenResponse
 from utils.password import verify_password, hash_password
 from utils.jwt import create_access_token, create_reset_token
-from dependencies.auth import get_current_user
+from dependencies.auth import get_current_user, oauth2_scheme, require_permission
 from models.password_reset_model import PasswordResetToken
 from datetime import datetime, timezone
 from utils.jwt import SECRET_KEY, ALGORITHM
-
 import jwt
+from models.revoked_tokens_model import RevokedToken
+
 router = APIRouter(
     prefix="/auth",
     tags=["Authentication"]
@@ -72,7 +73,8 @@ def login(
 def change_password(
     data: ChangePassword,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("auth.change_password"))
 ):
     if not verify_password(
         data.old_password,
@@ -147,4 +149,37 @@ def reset_password(
     db.commit()
     return {
         "message": "Password reset successfully"
+    }
+
+@router.get("/me", response_model=UserResponse)
+def get_me(
+    current_user: User = Depends(get_current_user),
+    permission_check: None = Depends(require_permission("auth.me"))
+):
+    return current_user
+
+@router.post("/logout")
+def logout(
+    token: str = Depends(oauth2_scheme),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("auth.logout"))
+):
+    payload = jwt.decode(
+        token,
+        SECRET_KEY,
+        algorithms=[ALGORITHM]
+    )
+    expires_at = datetime.fromtimestamp(
+        payload["exp"],
+        timezone.utc
+    ).replace(tzinfo=None)
+    revoked_token = RevokedToken(
+        token=token,
+        expires_at=expires_at
+    )
+    db.add(revoked_token)
+    db.commit()
+    return {
+        "message": "Logged out successfully"
     }

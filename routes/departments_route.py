@@ -8,6 +8,7 @@ from schemas.departments_schema import (
     DepartmentResponse
 )
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/departments",
@@ -17,7 +18,8 @@ router = APIRouter(
 @router.post("/", response_model=DepartmentResponse)
 def create_department(
     data: DepartmentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("departments.create"))
 ):
     existing_department = db.query(Department).filter(
         Department.name == data.name
@@ -36,7 +38,8 @@ def create_department(
 @router.get("/", response_model=list[DepartmentResponse])
 def get_departments(
     name: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("departments.read"))
 ):
     query = db.query(Department)
     if name:
@@ -48,7 +51,8 @@ def get_departments(
 @router.get("/{department_id}", response_model=DepartmentResponse)
 def get_department(
     department_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("departments.read"))
 ):
     department = db.query(Department).filter(
         Department.id == department_id
@@ -61,7 +65,8 @@ def get_department(
 def update_department(
     department_id: int,
     data: DepartmentUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("departments.update"))
 ):
     department = db.query(Department).filter(
         Department.id == department_id
@@ -85,7 +90,8 @@ def update_department(
 @router.delete("/{department_id}")
 def delete_department(
     department_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission: None = Depends(require_permission("departments.delete"))
 ):
     department = db.query(Department).filter(
         Department.id == department_id

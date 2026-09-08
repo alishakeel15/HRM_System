@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from datetime import date
+from datetime import date, datetime
 
 class LeaveCreate(BaseModel):
     employee_id: int
@@ -55,3 +55,5 @@ class LeaveResponse(BaseModel):
     end_date: date
     reason: str | None = None
     status: str
+    approved_by: int | None
+    approved_at: datetime | None

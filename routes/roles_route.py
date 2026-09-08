@@ -4,6 +4,7 @@ from dependencies.db import get_db
 from models.roles_model import Role
 from schemas.roles_schema import RoleCreate, RoleUpdate, RoleResponse
 from errors_handling.HTTP_Exceptions import not_found, already_exists
+from dependencies.auth import require_permission
 
 router = APIRouter(
     prefix="/roles",
@@ -13,7 +14,8 @@ router = APIRouter(
 @router.post("/", response_model=RoleResponse)
 def create_role(
     data: RoleCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("roles.create"))
 ):
     existing_role = db.query(Role).filter(
         Role.name == data.name
@@ -32,7 +34,8 @@ def create_role(
 @router.get("/", response_model=list[RoleResponse])
 def get_roles(
     name: str | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("roles.read"))
 ):
     query = db.query(Role)
     if name:
@@ -44,7 +47,8 @@ def get_roles(
 @router.get("/{role_id}", response_model=RoleResponse)
 def get_role(
     role_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("roles.read"))
 ):
     role = db.query(Role).filter(
         Role.id == role_id
@@ -57,7 +61,8 @@ def get_role(
 def update_role(
     role_id: int,
     data: RoleUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("roles.update"))
 ):
     role = db.query(Role).filter(
         Role.id == role_id
@@ -81,7 +86,8 @@ def update_role(
 @router.delete("/{role_id}")
 def delete_role(
     role_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    permission_check: None = Depends(require_permission("roles.delete"))
 ):
     role = db.query(Role).filter(
         Role.id == role_id
